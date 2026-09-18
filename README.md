@@ -8,7 +8,7 @@
 
 ```bash
 # Clone / navigate to project
-cd C:\Users\priya\.gemini\antigravity\scratch\DocScanner
+cd C:\Users\priya\scratch\DocScanner
 
 # Run application (downloads Maven on first use)
 .\mvnw.cmd spring-boot:run
