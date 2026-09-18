@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>DocScanner AI – Galgotias AIML</title>
+    <link rel="stylesheet" href="/css/styles.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+    <div class="header-brand">
+        <div class="brand-icon">📄</div>
+        <div class="brand-text">
+            <span class="brand-name">DocScanner <span class="brand-ai">AI</span></span>
+            <span class="brand-sub">Galgotias College · AIML Dept</span>
+        </div>
+    </div>
+    <nav class="tab-nav" id="tabNav">
+        <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+        <button class="tab-btn" data-tab="upload">📤 Upload</button>
+        <button class="tab-btn" data-tab="repository">📁 Documents</button>
+        <button class="tab-btn" data-tab="chat">🤖 AI Chat</button>
+        <button class="tab-btn" data-tab="search">🔍 Search</button>
+        <button class="tab-btn" data-tab="about">🎓 About</button>
+    </nav>
+    <div class="header-actions" style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-sm btn-secondary" onclick="openSettingsModal()" title="Configure OpenAI API Key">⚙️ AI Settings</button>
+        <div class="header-status" id="aiStatus">
+            <span class="status-dot"></span>
+            <span id="aiStatusText">Connecting...</span>
+        </div>
+    </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+
+    <!-- ========== DASHBOARD ========== -->
+    <div class="tab-panel active" id="tab-dashboard">
+        <div class="dashboard-hero">
+            <h1>AI-Powered Document Intelligence</h1>
+            <p>Upload scanned documents or PDFs. Extract text with OCR, search semantically, and get AI-powered answers about your documents.</p>
+            <div class="hero-actions">
+                <button class="btn btn-primary" onclick="switchTab('upload')">📤 Upload Document</button>
+                <button class="btn btn-secondary" onclick="switchTab('chat')">🤖 Ask AI</button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon">📄</div><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Documents</div></div>
+            <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="statReady">—</div><div class="stat-label">Ready for AI</div></div>
+            <div class="stat-card"><div class="stat-icon">⚙️</div><div class="stat-value" id="statProcessing">—</div><div class="stat-label">Processing</div></div>
+            <div class="stat-card"><div class="stat-icon">🤖</div><div class="stat-value" id="statMode">—</div><div class="stat-label">AI Engine</div></div>
+        </div>
+
+        <div class="pipeline-section">
+            <h2 class="section-title">Processing Pipeline</h2>
+            <div class="pipeline">
+                <div class="pipeline-step"><div class="step-icon">📤</div><div class="step-title">1. Upload</div><div class="step-desc">PDF · PNG · JPG · TXT</div></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step"><div class="step-icon">🖼️</div><div class="step-title">2. Preprocess</div><div class="step-desc">Grayscale · Blur · Otsu</div></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step"><div class="step-icon">🔤</div><div class="step-title">3. OCR</div><div class="step-desc">PDFBox · Tess4J</div></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step"><div class="step-icon">✂️</div><div class="step-title">4. Chunk</div><div class="step-desc">Sliding Window</div></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step"><div class="step-icon">📐</div><div class="step-title">5. Embed</div><div class="step-desc">Vector Encoding</div></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step"><div class="step-icon">🤖</div><div class="step-title">6. RAG Q&A</div><div class="step-desc">GPT · Local AI</div></div>
+            </div>
+        </div>
+
+        <div class="recent-section">
+            <h2 class="section-title">Recent Documents</h2>
+            <div id="recentDocuments" class="doc-grid"></div>
+        </div>
+    </div>
+
+    <!-- ========== UPLOAD ========== -->
+    <div class="tab-panel" id="tab-upload">
+        <h2 class="page-title">Upload Document</h2>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📤</div>
+            <h3>Drag & Drop your document here</h3>
+            <p>Supports PDF, PNG, JPG, JPEG, BMP, GIF, TIFF, TXT &nbsp;·&nbsp; Max 50 MB</p>
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click(); event.stopPropagation()">
+                📂 Choose File
+            </button>
+            <input type="file" id="fileInput" style="display:none"
+                   accept=".pdf,.png,.jpg,.jpeg,.bmp,.gif,.tiff,.tif,.txt"/>
+        </div>
+
+        <div class="upload-progress hidden" id="uploadProgress">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <p id="uploadStatus" style="font-size:13px;color:var(--text-muted);margin-top:8px">Uploading...</p>
+        </div>
+
+        <div class="upload-result hidden" id="uploadResult">
+            <div class="alert alert-success hidden" id="uploadSuccess"></div>
+            <div class="alert alert-error hidden" id="uploadError"></div>
+        </div>
+
+        <div class="upload-tips">
+            <h3>💡 Tips</h3>
+            <ul>
+                <li>For best OCR on scanned documents, use high-resolution scans (≥300 DPI).</li>
+                <li>PDF files with selectable text are extracted instantly without OCR.</li>
+                <li>After uploading, processing runs automatically. Watch the <strong>Documents</strong> tab for status updates.</li>
+                <li>Once status shows <strong>READY</strong>, use the <strong>AI Chat</strong> tab to ask questions.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ========== REPOSITORY ========== -->
+    <div class="tab-panel" id="tab-repository">
+        <div class="repo-header">
+            <h2 class="page-title">Document Repository</h2>
+            <button class="btn btn-secondary" onclick="loadDocuments()">🔄 Refresh</button>
+        </div>
+        <div id="documentList" class="doc-list"></div>
+    </div>
+
+    <!-- ========== OCR VIEWER MODAL ========== -->
+    <div class="modal-overlay hidden" id="ocrModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="ocrModalTitle">Document Viewer</h3>
+                <button class="modal-close" onclick="closeOcrModal()">✕</button>
+            </div>
+            <div class="modal-tabs">
+                <button class="modal-tab active" data-mtab="ocr-text">📝 Extracted Text</button>
+                <button class="modal-tab" data-mtab="ocr-preprocess">🖼️ Preprocessing</button>
+                <button class="modal-tab" data-mtab="ocr-summary">🤖 AI Summary</button>
+            </div>
+            <div class="modal-body">
+                <!-- OCR TEXT -->
+                <div class="modal-tab-panel active" id="ocr-text">
+                    <div class="ocr-toolbar">
+                        <span id="ocrStats" class="ocr-stats">—</span>
+                        <button class="btn btn-sm btn-secondary" onclick="copyOcrText()">📋 Copy</button>
+                        <button class="btn btn-sm btn-secondary" onclick="downloadOcrText()">⬇️ Download .txt</button>
+                    </div>
+                    <pre class="ocr-output" id="ocrTextContent">Loading...</pre>
+                </div>
+                <!-- PREPROCESSING -->
+                <div class="modal-tab-panel" id="ocr-preprocess">
+                    <div class="preprocess-controls">
+                        <label>Pipeline Stage:</label>
+                        <select id="preprocessStage" onchange="updatePreprocessPreview()">
+                            <option value="grayscale">1. Grayscale Conversion</option>
+                            <option value="denoise">2. Gaussian Blur (Noise Reduction)</option>
+                            <option value="threshold">3. Otsu Binarization</option>
+                            <option value="contrast">4. Contrast Enhancement</option>
+                            <option value="full" selected>Full Pipeline</option>
+                        </select>
+                    </div>
+                    <p id="preprocessNote" style="font-size:12px;color:var(--text-muted);margin-bottom:12px"></p>
+                    <div class="preprocess-comparison">
+                        <div class="img-panel">
+                            <div class="img-label">Original Image</div>
+                            <img id="originalImage" alt="Original" class="preview-img"/>
+                        </div>
+                        <div class="img-panel">
+                            <div class="img-label">After Processing</div>
+                            <img id="preprocessedImage" alt="Preprocessed" class="preview-img"/>
+                        </div>
+                    </div>
+                </div>
+                <!-- SUMMARY -->
+                <div class="modal-tab-panel" id="ocr-summary">
+                    <div id="summaryContent" class="summary-panel">
+                        <button class="btn btn-primary" onclick="generateSummary()">🤖 Generate AI Summary</button>
+                        <p style="font-size:12px;color:var(--text-muted);margin-top:8px">
+                            Uses OpenAI GPT (if configured) or local extractive summarization.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== AI SETTINGS MODAL ========== -->
+    <div class="modal-overlay hidden" id="settingsModal">
+        <div class="modal" style="max-width:550px">
+            <div class="modal-header">
+                <h3>⚙️ AI &amp; GPT Configuration</h3>
+                <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+                    Configure your API key to activate GPT-powered natural answers and generative document synthesis.
+                </p>
+
+                <div style="margin-bottom:16px">
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">OpenAI API Key</label>
+                    <input type="password" id="settingApiKey" class="search-input" style="width:100%"
+                           placeholder="sk-proj-... or leave blank for local mode" />
+                    <span style="font-size:11px;color:var(--text-dim);margin-top:4px;display:block">
+                        Leave blank to run in offline local semantic RAG mode.
+                    </span>
+                </div>
+
+                <div style="margin-bottom:16px">
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Chat Model</label>
+                    <select id="settingModel" class="doc-select">
+                        <option value="gpt-4o-mini">gpt-4o-mini (Recommended - Fast &amp; High Quality)</option>
+                        <option value="gpt-4o">gpt-4o (Most Intelligent)</option>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom:20px">
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">API Base URL (Optional)</label>
+                    <input type="text" id="settingBaseUrl" class="search-input" style="width:100%"
+                           value="https://api.openai.com/v1" />
+                    <span style="font-size:11px;color:var(--text-dim);margin-top:4px;display:block">
+                        Works with any OpenAI-compatible provider: Ollama (http://localhost:11434/v1), Groq, DeepSeek.
+                    </span>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+                    <button class="btn btn-secondary btn-sm" onclick="resetToLocalMode()">Switch to Local Mode</button>
+                    <button class="btn btn-primary" onclick="saveAiSettings()">💾 Save &amp; Activate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== AI CHAT ========== -->
+    <div class="tab-panel" id="tab-chat">
+        <div class="chat-layout">
+            <div class="chat-sidebar">
+                <h3>Scope</h3>
+                <select id="chatDocumentSelect" class="doc-select">
+                    <option value="">All Documents</option>
+                </select>
+                <div class="ai-mode-badge" id="aiModeBadge">
+                    <span class="status-dot"></span>
+                    <span id="aiModeText">Local Mode</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" style="width:100%" onclick="openSettingsModal()">⚙️ Configure GPT Key</button>
+                <hr style="border-color:var(--border);margin:4px 0"/>
+                <p style="font-size:11px;color:var(--text-muted);line-height:1.5">
+                    Select a specific document to ask questions about it, or keep "All Documents" for cross-document queries.
+                </p>
+                <button class="btn btn-secondary btn-sm" onclick="clearChat()">🗑 Clear Chat</button>
+            </div>
+
+            <div class="chat-main">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-welcome">
+                        <div class="welcome-icon">🤖</div>
+                        <h3>DocScanner AI Assistant</h3>
+                        <p>Upload documents and ask questions about their content. I'll retrieve the most relevant passages and answer based on your documents.</p>
+                        <div class="quick-prompts-container">
+                            <span style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:8px">Try asking:</span>
+                            <div class="quick-prompts">
+                                <button class="prompt-chip" onclick="askPreset('What is the main topic of this document?')">📄 What is the main topic?</button>
+                                <button class="prompt-chip" onclick="askPreset('What are the key points and takeaways?')">⚡ Key points & takeaways</button>
+                                <button class="prompt-chip" onclick="askPreset('What technologies or methods are used?')">🛠️ Technologies used</button>
+                                <button class="prompt-chip" onclick="askPreset('Summarize the findings and conclusion.')">📝 Summarize conclusion</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="chat-prompt-bar">
+                        <span class="chat-quick-label">Suggestions:</span>
+                        <button class="chat-quick-btn" onclick="askPreset('Give an overview of the document.')">Overview</button>
+                        <button class="chat-quick-btn" onclick="askPreset('What are the main objectives?')">Objectives</button>
+                        <button class="chat-quick-btn" onclick="askPreset('Explain the methodology and steps.')">Methodology</button>
+                        <button class="chat-quick-btn" onclick="askPreset('List all important names, dates, or numbers.')">Key Details</button>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-end">
+                        <textarea id="chatInput"
+                                  placeholder="Ask anything about your documents... (Enter to send, Shift+Enter for new line)"
+                                  rows="2"
+                                  onkeydown="handleChatKeydown(event)"></textarea>
+                        <button class="btn btn-primary" id="sendBtn" onclick="sendChatMessage()">Send ↵</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== SEARCH ========== -->
+    <div class="tab-panel" id="tab-search">
+        <h2 class="page-title">Document Search</h2>
+        <div class="search-box">
+            <div class="search-type-toggle">
+                <button class="search-type active" id="kwBtn" onclick="setSearchType('keyword')">🔤 Keyword Search</button>
+                <button class="search-type" id="semBtn" onclick="setSearchType('semantic')">🧠 Semantic (Vector) Search</button>
+            </div>
+            <div class="search-input-row">
+                <input type="text" id="searchInput" class="search-input"
+                       placeholder="Search document text and filenames..."
+                       onkeydown="if(event.key==='Enter') performSearch()"/>
+                <button class="btn btn-primary" onclick="performSearch()">Search</button>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:8px">
+                <strong>Keyword</strong>: Exact text match in filenames and extracted content. &nbsp;
+                <strong>Semantic</strong>: AI-powered vector similarity — finds conceptually related content.
+            </p>
+        </div>
+        <div id="searchResults" class="search-results"></div>
+    </div>
+
+    <!-- ========== ABOUT ========== -->
+    <div class="tab-panel" id="tab-about">
+        <div class="about-card">
+            <div class="about-header">
+                <div class="college-logo">🎓</div>
+                <div>
+                    <h2>Galgotias College of Engineering & Technology</h2>
+                    <p>Department of Artificial Intelligence & Machine Learning</p>
+                </div>
+            </div>
+            <div class="about-project">
+                <h3>Project: DocScanner — AI-Powered Document Scanning & RAG Management System</h3>
+                <div class="tech-grid">
+                    <div class="tech-item"><strong>Backend</strong>Spring Boot 3.3 · Java 21</div>
+                    <div class="tech-item"><strong>Database</strong>H2 (embedded) · MySQL (optional)</div>
+                    <div class="tech-item"><strong>OCR Engine</strong>Apache PDFBox 3 · Tess4J 5</div>
+                    <div class="tech-item"><strong>Image Processing</strong>Java AWT (no native libs)</div>
+                    <div class="tech-item"><strong>AI / RAG</strong>OpenAI GPT-4o-mini · Local Engine</div>
+                    <div class="tech-item"><strong>Vector Search</strong>Cosine Similarity · N-gram TF-IDF</div>
+                </div>
+            </div>
+            <div class="pipeline-detail">
+                <h3>Architecture</h3>
+                <div class="arch-steps">
+                    <div class="arch-step">📤 <strong>Upload</strong> → PDF / PNG / JPG / TXT stored with UUID filename</div>
+                    <div class="arch-step">🖼️ <strong>Preprocess</strong> → Grayscale · Gaussian Blur (3×3) · Otsu Threshold · Contrast Stretch</div>
+                    <div class="arch-step">🔤 <strong>OCR</strong> → PDFBox (digital PDFs) · Tess4J (scanned images) · Graceful fallback</div>
+                    <div class="arch-step">✂️ <strong>Chunk</strong> → 500-char sliding window with 100-char overlap &amp; sentence-boundary detection</div>
+                    <div class="arch-step">📐 <strong>Embed</strong> → OpenAI text-embedding-3-small (1536-dim) OR local n-gram TF-IDF (384-dim)</div>
+                    <div class="arch-step">🔍 <strong>Retrieve</strong> → Cosine Similarity Top-K vector search: cos(θ) = A·B / (‖A‖·‖B‖)</div>
+                    <div class="arch-step">🤖 <strong>Generate</strong> → GPT-4o-mini RAG answer with source citations / Local extractive fallback</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
